@@ -29,13 +29,14 @@ namespace GameServer
 		{
 			public TcpClient socket;
 
-			private readonly int id;
-			private NetworkStream stream;
-			private byte[] receiveBuffer;
+			private readonly int _id;
+			private NetworkStream _stream;
+			private Packet _receivedData;
+			private byte[] _receiveBuffer;
 
 			public TCP(int _id)
 			{
-				id = _id;
+				this._id = _id;
 			}
 
 			/// <summary>
@@ -47,20 +48,36 @@ namespace GameServer
 				socket = _socket;
 				socket.ReceiveBufferSize = dataBufferSize;
 
-				stream = socket.GetStream();
+				_stream = socket.GetStream();
 
-				receiveBuffer = new byte[dataBufferSize];
+				_receivedData = new Packet();
+				_receiveBuffer = new byte[dataBufferSize];
 
-				stream.BeginRead(receiveBuffer, 0, dataBufferSize, ReceiveCallback, null);
+				_stream.BeginRead(_receiveBuffer, 0, dataBufferSize, ReceiveCallback, null);
 
-				// TODO: Send welcome packet.
+				ServerSend.Welcome(_id, "Welcome to the server!");
+			}
+
+			public void SendData(Packet packet)
+			{
+				try
+				{
+					if (socket != null)
+					{
+						_stream.BeginWrite(packet.ToArray(), 0, packet.Length(), null, null);
+					}
+				}
+				catch (Exception ex)
+				{
+					Console.WriteLine($"Error sending data to player {_id} via TCP: {ex}");
+				}
 			}
 
 			private void ReceiveCallback(IAsyncResult result)
 			{
 				try
 				{
-					int byteLength = stream.EndRead(result);
+					int byteLength = _stream.EndRead(result);
 					if (byteLength <= 0)
 					{
 						// TODO: Disconnect
@@ -68,16 +85,63 @@ namespace GameServer
 					}
 
 					byte[] data = new byte[byteLength];
-					Array.Copy(receiveBuffer, data, byteLength);
+					Array.Copy(_receiveBuffer, data, byteLength);
 
-					// TODO: Handle data.
-					stream.BeginRead(receiveBuffer, 0, dataBufferSize, ReceiveCallback, null);
+					_receivedData.Reset(HandleData(data));
+					_stream.BeginRead(_receiveBuffer, 0, dataBufferSize, ReceiveCallback, null);
 				}
 				catch (Exception ex)
 				{
 					Console.WriteLine($"Error receiving TCP Data: {ex}");
 					// TODO: Disconnect.
 				}
+			}
+
+			private bool HandleData(byte[] data)
+			{
+				int packetLength = 0;
+
+				_receivedData.SetBytes(data);
+
+				if (_receivedData.UnreadLength() >= 4)
+				{
+					packetLength = _receivedData.ReadInt();
+					if (packetLength <= 0)
+					{
+						return true;
+					}
+				}
+
+				while (packetLength > 0 && packetLength <= _receivedData.UnreadLength())
+				{
+					byte[] packetBytes = _receivedData.ReadBytes(packetLength);
+					ThreadManager.ActionExecuteOnMainThread(() =>
+					{
+						using (Packet packet = new Packet(packetBytes))
+						{
+							int packetId = packet.ReadInt();
+							Server.packetHandlers[packetId](_id, packet);
+						}
+					});
+
+					packetLength = 0;
+
+					if (_receivedData.UnreadLength() >= 4)
+					{
+						packetLength = _receivedData.ReadInt();
+						if (packetLength <= 0)
+						{
+							return true;
+						}
+					}
+				}
+
+				if (packetLength <= 1)
+				{
+					return true;
+				}
+
+				return false;
 			}
 		}
 	}
