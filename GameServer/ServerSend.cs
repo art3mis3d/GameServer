@@ -23,6 +23,17 @@ namespace GameServer
 		}
 
 		/// <summary>
+		/// Method to send Data to a <see cref="Client"/> via UDP
+		/// </summary>
+		/// <param name="toClient">The client id to send the packet to</param>
+		/// <param name="packet">The <see cref="Packet"/> to send</param>
+		private static void SendUDPData(int toClient, Packet packet)
+		{
+			packet.WriteLength();
+			Server.clients[toClient].udp.SendData(packet);
+		}
+
+		/// <summary>
 		/// Method to send Data to all <see cref="Client"/>s via TCP
 		/// </summary>
 		/// <param name="packet">The <see cref="Packet"/> to send</param>
@@ -53,6 +64,38 @@ namespace GameServer
 		}
 
 		/// <summary>
+		/// Method to send Data to all <see cref="Client"/>s via UDP
+		/// </summary>
+		/// <param name="packet">The <see cref="Packet"/> to send</param>
+		private static void SendUDPDataToAll(Packet packet)
+		{
+			packet.WriteLength();
+			for (int i = 1; i <= Server.MaxPlayers; i++)
+			{
+				Server.clients[i].udp.SendData(packet);
+			}
+		}
+
+		/// <summary>
+		/// Method to send Data to all <see cref="Client"/>s except one via UDP
+		/// </summary>
+		/// <param name="exceptClient">The client id to exclude from the send</param>
+		/// <param name="packet">The <see cref="Packet"/> to send</param>
+		private static void SendUDPDataToAll(int exceptClient, Packet packet)
+		{
+			packet.WriteLength();
+			for (int i = 1; i <= Server.MaxPlayers; i++)
+			{
+				if (i != exceptClient)
+				{
+					Server.clients[i].udp.SendData(packet);
+				}
+			}
+		}
+
+		#region Packets
+
+		/// <summary>
 		/// Packet welcoming client to the server
 		/// </summary>
 		/// <param name="toClient">The Client ID to write on the packet</param>
@@ -67,5 +110,17 @@ namespace GameServer
 				SendTCPData(toClient, packet);
 			}
 		}
+
+		public static void UDPTest(int toClient)
+		{
+			using (Packet packet = new Packet((int)ServerPackets.UdpTest))
+			{
+				packet.Write("A test packet for UDP.");
+
+				SendUDPData(toClient, packet);
+			}
+		}
+
+		#endregion
 	}
 }
