@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -18,14 +19,15 @@ namespace GameServer
 			{
 				Console.WriteLine($"Player \"{username}\" (ID: {fromClient}) has assumed the wrong client ID ({clientIdCheck})!)");
 			}
-			// TODO: Send Player into game
+			Server.clients[fromClient].SendIntoGame(username);
 		}
 
-		internal static void UDPTestReceived(int fromClient, Packet packet)
+		public static void PlayerMovement(int fromClient, Packet packet)
 		{
-			string msg = packet.ReadString();
+			Vector2 moveInput = packet.ReadVector2();
+			Quaternion rotation = packet.ReadQuaternion();
 
-			Console.WriteLine($"Received a packet via UDP. Contains message : {msg}");
+			Server.clients[fromClient].player.SetInput(moveInput, rotation);
 		}
 	}
 }

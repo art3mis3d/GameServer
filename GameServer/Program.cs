@@ -19,7 +19,7 @@ namespace GameServer
 
 		private static void MainThread()
 		{
-			Console.WriteLine($"Main thread has started. Running at {Constants.ticksPerSec} ticks per second");
+			Console.WriteLine($"Main thread has started. Running at {Constants.TICKS_PER_SEC} ticks per second");
 			DateTime nextloop = DateTime.Now;
 
 			while (isRunning)
@@ -28,7 +28,7 @@ namespace GameServer
 				{
 					GameLogic.Update();
 
-					nextloop = nextloop.AddMilliseconds(Constants.msPerTick);
+					nextloop = nextloop.AddMilliseconds(Constants.MS_PER_TICK);
 
 					if (nextloop > DateTime.Now)
 					{

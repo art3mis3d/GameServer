@@ -8,7 +8,7 @@ namespace GameServer
 {
 	class Constants
 	{
-		public const int ticksPerSec = 32;
-		public const float msPerTick = 1000 / ticksPerSec;
+		public const int TICKS_PER_SEC = 50;
+		public const float MS_PER_TICK = 1000f / TICKS_PER_SEC;
 	}
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -10,14 +11,16 @@ namespace GameServer
 	public enum ServerPackets
 	{
 		Welcome = 1,
-		UdpTest
+		SpawnPlayer,
+		PlayerPosition,
+		PlayerRotation
 	}
 
 	/// <summary>Sent from client to server.</summary>
 	public enum ClientPackets
 	{
 		WelcomeReceived = 1,
-		UdpTestReceived
+		PlayerMovement
 	}
 
 	public class Packet : IDisposable
@@ -163,6 +166,30 @@ namespace GameServer
 		{
 			Write(value.Length); // Add the length of the string to the packet
 			_buffer.AddRange(Encoding.ASCII.GetBytes(value)); // Add the string itself
+		}
+		/// <summary>Adds a <see cref="Vector2"/> to the packet</summary>
+		/// <param name="value">The <see cref="Vector2"/> to add</param>
+		public void Write(Vector2 value)
+		{
+			Write(value.X);
+			Write(value.Y);
+		}
+		/// <summary>Adds a <see cref="Vector3"/> to the packet</summary>
+		/// <param name="value">The <see cref="Vector3"/> to add</param>
+		public void Write(Vector3 value)
+		{
+			Write(value.X);
+			Write(value.Y);
+			Write(value.Z);
+		}
+		/// <summary>Adds a <see cref="Quaternion"/> to the packet</summary>
+		/// <param name="value">The <see cref="Quaternion"/> to add</param>
+		public void Write(Quaternion value)
+		{
+			Write(value.X);
+			Write(value.Y);
+			Write(value.Z);
+			Write(value.W);
 		}
 
 		#endregion
@@ -336,6 +363,28 @@ namespace GameServer
 			{
 				throw new Exception("Could not read value of type 'string'!");
 			}
+		}
+
+		/// <summary>Reads a <see cref="Vector2"/> from the packet.</summary>
+		/// <param name="moveReadPos">Whether or not to move the buffer's read position.</</param>
+		/// <returns></returns>
+		public Vector2 ReadVector2(bool moveReadPos = true)
+		{
+			return new Vector2(ReadFloat(moveReadPos), ReadFloat(moveReadPos));
+		}
+
+		/// <summary>Reads a <see cref="Vector3"/> from the packet.</summary>
+		/// <param name="moveReadPos">Whether or not to move the buffer's read position.</param>
+		public Vector3 ReadVector3(bool moveReadPos = true)
+		{
+			return new Vector3(ReadFloat(moveReadPos), ReadFloat(moveReadPos), ReadFloat(moveReadPos));
+		}
+
+		/// <summary>Reads a <see cref="Quaternion"/> from the packet.</summary>
+		/// <param name="moveReadPos">Whether or not to move the buffer's read position.</param>
+		public Quaternion ReadQuaternion(bool moveReadPos = true)
+		{
+			return new Quaternion(ReadFloat(moveReadPos), ReadFloat(moveReadPos), ReadFloat(moveReadPos), ReadFloat(moveReadPos));
 		}
 
 		#endregion
